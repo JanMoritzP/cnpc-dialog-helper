@@ -1,0 +1,6 @@
+/dialogs
+/Lib
+/Scripts
+/__pycache__
+pyvenv.cfg
+dialogHelper.config
