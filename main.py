@@ -1,8 +1,10 @@
-from os import walk, remove, path
+from os import walk, remove, path, mkdir
+from shutil import rmtree
 from tkinter import *
 import json
 import math
 from shutil import copyfile
+from turtle import width
 from cleanJson import clean
 from createBubble import getArrow
 from editWindow import EditWindow
@@ -48,6 +50,14 @@ class GUI(Tk):
         self.createBtn.pack()
         self.linkBtn = Button(self, text="link", command=self.toggleLink)
         self.linkBtn.pack()
+        self.createNewFolder = Button(self, text="create new folder", command=self.createFolder)
+        self.createNewFolder.pack()
+        self.createFolderText = Text(self, height=1, width=50)
+        self.createFolderText.pack()
+        self.removeFolder = Button(self, text="remove folder", command=self.removeFolder)
+        self.removeFolder.pack()
+        self.exitBtn = Button(self, text="exit", command=self.destroy)
+        self.exitBtn.pack()
         
         self.mode = "move"
 
@@ -107,6 +117,26 @@ class GUI(Tk):
         elif button == "link":
             self.linkBtn.configure(state='disabled')
 
+    def createFolder(self):
+        if self.createFolderText.get("1.0", "end").strip() != "":
+            mkdir(self.path + self.createFolderText.get("1.0", "end").strip())
+        self.createFolderText.delete("1.0", "end")        
+        (_, dirnames, _) = walk(self.path).__next__()
+        self.choice.set("")
+        self.dropdownMenu['menu'].delete(0, "end")
+        for dirname in dirnames:
+            self.dropdownMenu['menu'].add_command(label=dirname, command=lambda value=dirname:self.choice.set(value))
+            
+    def removeFolder(self):
+        if self.choice.get() != "":
+            rmtree(self.path + self.choice.get())    
+            self.createFolderText.delete("1.0", "end")        
+            (_, dirnames, _) = walk(self.path).__next__()
+            self.choice.set("")
+            self.dropdownMenu['menu'].delete(0, "end")
+            for dirname in dirnames:
+                self.dropdownMenu['menu'].add_command(label=dirname, command=lambda value=dirname:self.choice.set(value))
+
     def saveConfig(self):
         if path.isfile("dialogHelper.config"):
             with open("dialogHelper.config", "r+", encoding="utf-8") as file:
@@ -126,18 +156,7 @@ class GUI(Tk):
                 json.dump(data, file, indent=4, ensure_ascii=False)
                 file.truncate()
     
-    def save(self, element):
-        clean(element, self)
-        tmp = open("temp.json", encoding="utf-8")
-        data = json.load(tmp)
-        data["DialogTitle"] = self.openWindow["dialogTitle"].get("1.0", "end")
-        data["DialogText"] = self.openWindow["dialogText"].get("1.0", "end")
-        file = open("dialogs/" + self.choice.get() + "/" + element, "w+", encoding="utf-8")
-        json.dump(data, file, indent=4, ensure_ascii=False)
-        file.truncate()
-        file.close()
-        tmp.close()
-        remove("temp.json")
+    
 
     def release(self, event):
         #get the tag from the textBox xxx.json and save that to the positons object
@@ -195,6 +214,7 @@ class GUI(Tk):
             try:
                 data = json.load(tmp)
             except json.JSONDecodeError:
+                print("JsonDecodeError with " + file)
                 tmp.close()
                 remove('temp.json')
                 continue
@@ -258,8 +278,8 @@ class GUI(Tk):
             remove("temp.json")
 
 
-    def printSelection(self):
-        print(self.selection.get() + " added")
+    def refresh(self):
+        self.load()
 
     def clickedText(self, event):
         #enumerate over the bboxes and check in whick bbox the click is
@@ -285,43 +305,9 @@ class GUI(Tk):
 
             tmp = open("temp.json", encoding="utf-8")
             data = json.load(tmp)
-
-            editWindow = EditWindow(self, "config", data, tag)
-            return
-            self.popup = Toplevel(master=self, name=tag.split('.')[0])
-            self.popup.title("Edit")
-            self.popup.geometry("1000x400")
-            self.openWindow["master"] = self.popup
-
-            self.selection = StringVar()
-            selectionMenu = OptionMenu(self.popup, self.selection, *data.keys())
-            selectionMenu.grid(row=0, column=3)
-            addField = Button(master=self.popup, text="Add", command=self.printSelection)
-            addField.grid(row=1, column=3)
-
-            textWidth = 80
-            textHeight = 5
-            labelTitle = Label(master=self.popup, text="Dialog Title")
-            labelTitle.grid(row=0, column=0)
-            titleInput = Text(master=self.popup, height=textHeight, width=textWidth)
-            titleInput.grid(row=0, column=1)
-            titleInput.insert("end-1c", data["DialogTitle"])
-            titleKill = Button(master=self.popup, text="X")
-            titleKill.grid(row=0, column=2)
-            self.openWindow["dialogTitle"] = titleInput
-            labelText = Label(master=self.popup, text="Dialog Text")
-            labelText.grid(row=1, column=0)
-            textInput = Text(master=self.popup, height=textHeight, width=textWidth)
-            textInput.grid(row=1, column=1)
-            textInput.insert("end-1c", data["DialogText"])
-            textKill = Button(master=self.popup, text="X")
-            textKill.grid(row=1, column=2)
-            self.openWindow["dialogText"] = textInput
-            
-            exitButton = Button(master=self.popup, text="Save", name="btn;" + tag.split(".")[0], command=lambda m=tag:self.save(m))
-            exitButton.grid(row=2, column=0)
             tmp.close()
-            remove("temp.json")
+
+            editWindow = EditWindow(self, None, data, tag)
         elif self.mode == "link":
             if self.linking:
                 self.linking = False
