@@ -2,8 +2,10 @@ from os import walk, remove, path
 from tkinter import *
 import json
 import math
+from shutil import copyfile
 from cleanJson import clean
 from createBubble import getArrow
+from editWindow import EditWindow
 
 
 class GUI(Tk):
@@ -71,6 +73,9 @@ class GUI(Tk):
         self.fileIndeces = []
         self.positions = {}
         self.openWindow = {}
+        
+        self.linking = False
+        self.linkSrc = None
 
     def toggleMove(self, event=None):
         self.mode = "move"
@@ -179,15 +184,20 @@ class GUI(Tk):
     def load(self):
         self.positions = {}
         self.bboxes = []
+        self.lines = []
         self.amountItems = 0
         self.canvas.delete('all')
         self.loadedChoice = self.choice.get()
         (_, _, filenames) = walk(self.path + self.choice.get()).__next__()
         for file in filenames:
             clean(file, self)
-                    
             tmp = open("temp.json", encoding="utf-8") #Make sure the encoding is utf-8 so that special chars can be displayed       
-            data = json.load(tmp)
+            try:
+                data = json.load(tmp)
+            except json.JSONDecodeError:
+                tmp.close()
+                remove('temp.json')
+                continue
             #coords = (self.amountItems*50, self.amountItems*50 + 50, self.amountItems*40, self.amountItems*40 +30)
             #Insert an artificial linebreak for the text to make it not collide
             #To do that, check the size of the string, and find a whitespace closest to the middle of the string and replace with \n
@@ -276,6 +286,8 @@ class GUI(Tk):
             tmp = open("temp.json", encoding="utf-8")
             data = json.load(tmp)
 
+            editWindow = EditWindow(self, "config", data, tag)
+            return
             self.popup = Toplevel(master=self, name=tag.split('.')[0])
             self.popup.title("Edit")
             self.popup.geometry("1000x400")
@@ -310,6 +322,66 @@ class GUI(Tk):
             exitButton.grid(row=2, column=0)
             tmp.close()
             remove("temp.json")
+        elif self.mode == "link":
+            if self.linking:
+                self.linking = False
+                source = self.linkSrc
+                dst = False
+                for bbox in self.bboxes:
+                    x1, y1, x2, y2 = bbox[0]
+                    if event.x >= x1 and event.x <= x2 and event.y >= y1 and event.y <= y2:
+                        dst = [bbox[2], bbox[3], event.x, event.y] #rect, textBox, x, y
+                if dst == False:
+                    return
+                filename = self.canvas.gettags(dst[1])[0] #This gives us filename
+                clean(filename, self)
+                tmp = open("temp.json", encoding='utf-8')
+                #try:
+                #except:
+                #    return
+                data = json.load(tmp)
+                tmp.close()
+                remove("temp.json")
+                if len(data["Options"]) > 6: return
+                filename = source
+                clean(source, self)
+                tmp = open("temp.json", encoding='utf-8')
+                sourceData = json.load(tmp)
+                tmp.close()
+                remove("temp.json")
+                if len(data["Options"]) > 0:
+                    for option in data["Options"]:
+                        if option["Option"]["Dialog"] == source.split("."):
+                            return
+                defaultOption = {
+                "OptionSlot": str(len(data["Options"])),
+                "Option": {
+                    "DialogCommand": "",
+                    "Dialog": sourceData["DialogId"],
+                    "Title": sourceData["DialogTitle"],
+                    "DialogColor": "14737632",
+                    "OptionType": "1"
+                }}
+                data["Options"].append(defaultOption)
+                file = open(self.path + self.choice.get() + "/" + self.canvas.gettags(dst[1])[0], 'w', encoding='utf-8')
+                json.dump(data, file, indent=4, ensure_ascii=False)
+                file.truncate()
+                file.close()
+                
+                initCoords = self.canvas.coords(self.canvas.find_withtag(source + "rect")[0])
+                targetCoords = self.canvas.coords(self.canvas.find_withtag(self.canvas.gettags(dst[1])[0] + "rect")[0])
+                startMid, targetMid = getArrow(initCoords, targetCoords)
+                line = self.canvas.create_line(startMid[0], startMid[1], targetMid[0], targetMid[1], arrow=LAST, tags=source + "arrow" + self.canvas.gettags(dst[1])[0])
+                self.lines.append([self.canvas.find_withtag(source + "rect")[0], self.canvas.find_withtag(self.canvas.gettags(dst[1])[0] + "rect")[0], line])
+            else:
+                for bbox in self.bboxes:
+                    x1, y1, x2, y2 = bbox[0]
+                    if event.x >= x1 and event.x <= x2 and event.y >= y1 and event.y <= y2:
+                        src = [bbox[2], bbox[3], event.x, event.y] #rect, textBox, x, y
+                if src == False:
+                    return
+                self.linking = True
+                self.linkSrc = self.canvas.gettags(src[1])[0]
 
     def canvasClicked(self, event):
         if self.mode == "create" and self.loadedChoice != "":
@@ -323,10 +395,22 @@ class GUI(Tk):
             
             self.fileIndeces.append(self.currentId)
             self.positions[tag] = self.canvas.coords(textBox)
+            filename = self.path + self.choice.get() + "/" + tag
+            file = open(filename, 'w+', encoding='utf-8')
+            file.close()
+            copyfile('reference.json', filename)
+            file = open(filename, 'r', encoding='utf-8')
+
+            data = json.load(file)
+            data["DialogId"] = self.currentId
+            data["DialogTitle"] = "New Dialog"
+            data["DialogText"] = "Insert Dialog Text"
+            file.close()
+            file = open(filename, 'w', encoding='utf-8')
+            json.dump(data, file, indent=4, ensure_ascii=False)
+            file.truncate()
+            file.close()
             self.currentId += 1
-            #Write the actual file here!!!
-
-
 
 def main():
     #path = input("Enter the root path of your dialog directory: ")

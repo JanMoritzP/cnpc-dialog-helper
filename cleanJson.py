@@ -1,7 +1,7 @@
 from os import walk, remove
 from tkinter import Tk
 
-def clean(file: int, self: Tk) -> None:
+def clean(file: str, self: Tk) -> None:
     """Clean up json file"""
     linebreak = False
     with open("temp.json", "w") as tmp:
