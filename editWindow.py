@@ -18,14 +18,16 @@ class EditWindow(Toplevel):
             self.selectionMenu.grid(row=0, column=3)
             self.addField = Button(master=self, text="Add", command=self.addSelection)
             self.addField.grid(row=1, column=3)
-
+            self.bind("<Escape>", self.saveQuit)
             self.textWidth = 40
             self.textHeight = 2
             self.labelTitle = Label(master=self, text="Dialog Title")
             self.labelTitle.grid(row=0, column=0)
             self.titleInput = Text(master=self, height=self.textHeight, width=self.textWidth)
             self.titleInput.grid(row=0, column=1)
+            self.titleInput.focus()
             self.titleInput.insert("end-1c", data["DialogTitle"])
+            self.titleInput.bind("<Tab>", lambda event:self.shiftFocus(event))
             self.titleKill = Button(master=self, text="X")
             self.titleKill.grid(row=0, column=2)
             self.labelText = Label(master=self, text="Dialog Text")
@@ -33,6 +35,7 @@ class EditWindow(Toplevel):
             self.textInput = Text(master=self, height=self.textHeight, width=self.textWidth)
             self.textInput.grid(row=1, column=1)
             self.textInput.insert("end-1c", data["DialogText"])
+            self.textInput.bind("<Tab>", lambda event:self.shiftFocus(event))
             self.textKill = Button(master=self, text="X")
             self.textKill.grid(row=1, column=2)
             self.optionTextFields = []
@@ -49,6 +52,7 @@ class EditWindow(Toplevel):
                 optionText = Text(master=self, height=self.textHeight, width=self.textWidth)
                 optionText.grid(row=self.currentRow, column=1)
                 optionText.insert("end-1c", option["Option"]["Title"])
+                optionText.bind("<Tab>", lambda event:self.shiftFocus(event))
                 self.optionTextFields.append(optionText)
                 killButton = Button(master=self, text="X")
                 killButton.configure(command=partial(self.killDialog, killButton, optionText, optionLabel))
@@ -64,6 +68,15 @@ class EditWindow(Toplevel):
 
         else:
             print("YOoo, config yeahh")
+
+    def shiftFocus(self, event):
+        event.widget.tk_focusNext().focus()
+        return("break")
+
+
+    def saveQuit(self, event=None):
+        self.save()
+        self.destroy()
 
     def save(self):
         if self.fields == None:
@@ -107,6 +120,7 @@ class EditWindow(Toplevel):
         self.optionLabels.append(optionLabel)
         closingDialog = Text(master=self, height=self.textHeight, width=self.textWidth)
         closingDialog.grid(row=self.currentRow, column=1)
+        closingDialog.bind("<Tab>", lambda event:self.shiftFocus(event))
         killButton = Button(master=self, text="X")
         killButton.configure(command=partial(self.killDialog, killButton, closingDialog, optionLabel))
         killButton.grid(row=self.currentRow, column=2)
