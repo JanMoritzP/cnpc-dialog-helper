@@ -33,14 +33,22 @@ class GUI(Tk):
         
         self.loadBtn = Button(self, text='Load', command=self.load)
         self.loadBtn.pack()
+        self.loadedChoice = ""
 
-        self.loadBtn = Button(self, text='Save', command=self.saveConfig)
-        self.loadBtn.pack()
+        self.saveBtn = Button(self, text='Save', command=self.saveConfig)
+        self.saveBtn.pack()
 
-        self.toggleMoveBtn = Button(self, text="move", command=self.toggleMove)
-        self.toggleMoveBtn.pack()
-        self.move = True
+        self.moveBtn = Button(self, text="move", command=self.toggleMove, state='disabled')
+        self.moveBtn.pack()
+        self.editBtn = Button(self, text="edit", command=self.toggleEdit)
+        self.editBtn.pack()
+        self.createBtn = Button(self, text="create", command=self.toggleCreate)
+        self.createBtn.pack()
+        self.linkBtn = Button(self, text="link", command=self.toggleLink)
+        self.linkBtn.pack()
         
+        self.mode = "move"
+
         self.bind('<Escape>', self.endFullscreen)
         self.bind('<F11>', self.toggleFullscreen)
     
@@ -51,6 +59,7 @@ class GUI(Tk):
         self.canvas.pack()
         self.canvas.bind("<B1-Motion>", self.moveMouse)
         self.canvas.bind("<ButtonRelease-1>", self.release)
+        self.canvas.bind("<Button-1>", self.canvasClicked)
 
         self.changes = []
 
@@ -64,9 +73,34 @@ class GUI(Tk):
         self.openWindow = {}
 
     def toggleMove(self, event=None):
-        if self.move: self.toggleMoveBtn.configure(text="edit")
-        else: self.toggleMoveBtn.configure(text="move")
-        self.move = not self.move
+        self.mode = "move"
+        self.handleButtonStates("move")
+
+    def toggleEdit(self, event=None):
+        self.mode = "edit"
+        self.handleButtonStates("edit")
+        
+    def toggleCreate(self, event=None):
+        self.mode = "create"
+        self.handleButtonStates("create")
+        
+    def toggleLink(self, event=None):
+        self.mode = "link"
+        self.handleButtonStates("link")
+
+    def handleButtonStates(self, button):
+        self.moveBtn.configure(state='active')
+        self.editBtn.configure(state='active')
+        self.createBtn.configure(state='active')
+        self.linkBtn.configure(state='active')
+        if button == "move":
+            self.moveBtn.configure(state='disabled')
+        elif button == "edit":
+            self.editBtn.configure(state='disabled')
+        elif button == "create": 
+            self.createBtn.configure(state='disabled')
+        elif button == "link":
+            self.linkBtn.configure(state='disabled')
 
     def saveConfig(self):
         if path.isfile("dialogHelper.config"):
@@ -147,6 +181,7 @@ class GUI(Tk):
         self.bboxes = []
         self.amountItems = 0
         self.canvas.delete('all')
+        self.loadedChoice = self.choice.get()
         (_, _, filenames) = walk(self.path + self.choice.get()).__next__()
         for file in filenames:
             clean(file, self)
@@ -180,7 +215,6 @@ class GUI(Tk):
                     pass
             textBox=self.canvas.create_text(xCoord, yCoord, anchor=W, text=shownText, tags=tag)
             rect=self.canvas.create_rectangle(self.canvas.bbox(textBox), outline="black", tags=tag + "rect")
-            # self.canvas.tag_lower(textBox, rect)
             self.canvas.tag_bind(tag, "<ButtonPress-1>", self.clickedText)
             self.amountItems += 1
             self.bboxes.append([self.canvas.coords(rect), tag, rect, textBox])
@@ -219,16 +253,16 @@ class GUI(Tk):
 
     def clickedText(self, event):
         #enumerate over the bboxes and check in whick bbox the click is
-        if not self.clicked and self.move:
+        if not self.clicked and self.mode == "move":
             for bbox in self.bboxes:
                 x1, y1, x2, y2 = bbox[0]
                 if event.x >= x1 and event.x <= x2 and event.y >= y1 and event.y <= y2:
                     self.clicked = True
                     self.clickedRect = [bbox[2], bbox[3], event.x, event.y]
-        elif self.clicked and self.move: 
+        elif self.clicked and self.mode == "move": 
             self.clicked = False
             self.clickedRect = []
-        elif not self.move:
+        elif self.mode == "edit":
             #Open Popup menu
             self.openWindow = {}
             tag = ""
@@ -277,6 +311,20 @@ class GUI(Tk):
             tmp.close()
             remove("temp.json")
 
+    def canvasClicked(self, event):
+        if self.mode == "create" and self.loadedChoice != "":
+            x, y = event.x, event.y
+            tag = str(self.currentId) + ".json"
+            textBox=self.canvas.create_text(x, y, anchor=W, text="new dialog", tags=tag)
+            rect=self.canvas.create_rectangle(self.canvas.bbox(textBox), outline="black", tags=tag + "rect")
+            self.canvas.tag_bind(tag, "<ButtonPress-1>", self.clickedText)
+            self.amountItems += 1
+            self.bboxes.append([self.canvas.coords(rect), tag, rect, textBox])
+            
+            self.fileIndeces.append(self.currentId)
+            self.positions[tag] = self.canvas.coords(textBox)
+            self.currentId += 1
+            #Write the actual file here!!!
 
 
 
