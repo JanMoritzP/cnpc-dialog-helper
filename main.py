@@ -120,12 +120,12 @@ class GUI(Tk):
     def createFolder(self):
         if self.createFolderText.get("1.0", "end").strip() != "":
             mkdir(self.path + self.createFolderText.get("1.0", "end").strip())
-        self.createFolderText.delete("1.0", "end")        
-        (_, dirnames, _) = walk(self.path).__next__()
-        self.choice.set("")
-        self.dropdownMenu['menu'].delete(0, "end")
-        for dirname in dirnames:
-            self.dropdownMenu['menu'].add_command(label=dirname, command=lambda value=dirname:self.choice.set(value))
+            self.createFolderText.delete("1.0", "end")        
+            (_, dirnames, _) = walk(self.path).__next__()
+            self.choice.set("")
+            self.dropdownMenu['menu'].delete(0, "end")
+            for dirname in dirnames:
+                self.dropdownMenu['menu'].add_command(label=dirname, command=lambda value=dirname:self.choice.set(value))
             
     def removeFolder(self):
         if self.choice.get() != "":
@@ -136,6 +136,7 @@ class GUI(Tk):
             self.dropdownMenu['menu'].delete(0, "end")
             for dirname in dirnames:
                 self.dropdownMenu['menu'].add_command(label=dirname, command=lambda value=dirname:self.choice.set(value))
+            self.canvas.delete('all')
 
     def saveConfig(self):
         if path.isfile("dialogHelper.config"):

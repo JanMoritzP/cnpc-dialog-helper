@@ -1,5 +1,6 @@
 from tkinter import Label, Toplevel, StringVar, OptionMenu, Button, Text
 from cleanJson import clean
+from compoundField import CompoundField
 from os import remove
 import json
 from functools import partial
@@ -13,14 +14,21 @@ class EditWindow(Toplevel):
         self.geometry("800x500")
         self.title("Editing " + data["DialogTitle"])
         if config == None:
-            self.selection = StringVar()
-            self.selectionMenu = OptionMenu(self, self.selection, *data.keys())
-            self.selectionMenu.grid(row=0, column=3)
-            self.addField = Button(master=self, text="Add", command=self.addSelection)
-            self.addField.grid(row=1, column=3)
+            #self.selection = StringVar()
+            #self.selectionMenu = OptionMenu(self, self.selection, *data.keys())
+            #self.selectionMenu.grid(row=0, column=3)
+            #self.addField = Button(master=self, text="Add", command=self.addSelection)
+            #self.addField.grid(row=1, column=3)
             self.bind("<Escape>", self.saveQuit)
-            self.textWidth = 40
-            self.textHeight = 2
+            #self.textWidth = 40
+            #self.textHeight = 2
+            self.widgets = {}
+            self.widgets["DialogTitle"] = CompoundField(self, "Dialog Title", data["DialogTitle"], "DialogTitle")
+            self.widgets["DialogTitle"].grid(column=0, row=0)
+            self.widgets["DialogText"] = CompoundField(self, "Dialog Text", data["DialogText"], "DialogText")
+            self.widgets["DialogText"].grid(column=0, row=1)
+            
+            """
             self.labelTitle = Label(master=self, text="Dialog Title")
             self.labelTitle.grid(row=0, column=0)
             self.titleInput = Text(master=self, height=self.textHeight, width=self.textWidth)
@@ -38,32 +46,43 @@ class EditWindow(Toplevel):
             self.textInput.bind("<Tab>", lambda event:self.shiftFocus(event))
             self.textKill = Button(master=self, text="X")
             self.textKill.grid(row=1, column=2)
-            self.optionTextFields = []
-            self.optionLabels = []
-            self.currentRow = 3
-            self.dialogAmount = len(data["Options"])
+            self.optionTextFields = [None] * len(data["Options"])
+            self.optionLabels = [None] * len(data["Options"])
+            self.killButtonList = [None] * len(data["Options"])
             self.removedOptions = []
+            """
+            self.dialogAmount = len(data["Options"])
+            self.currentRow = 2
+            self.elements = 0
+            
             for option in data["Options"]:
-                optionLabel = Label(master=self, text="Option Label for " + option["Option"]["Dialog"], name=option["Option"]["Dialog"])
+                self.widgets["option" + option["OptionSlot"]] = CompoundField(self, "Option Label for " + option["Option"]["Dialog"], option["Option"]["Title"], "option" + option["OptionSlot"], option["Option"]["Dialog"], self.elements)
+                #self.optionLabels[currentElement] = Label(master=self, text="Option Label for " + option["Option"]["Dialog"], name=option["Option"]["Dialog"])
                 if option["Option"]["Dialog"] == "-1":
-                    optionLabel.configure(text="Closing Dialog")
-                optionLabel.grid(row=self.currentRow, column=0)
-                self.optionLabels.append(optionLabel)
-                optionText = Text(master=self, height=self.textHeight, width=self.textWidth)
-                optionText.grid(row=self.currentRow, column=1)
-                optionText.insert("end-1c", option["Option"]["Title"])
-                optionText.bind("<Tab>", lambda event:self.shiftFocus(event))
-                self.optionTextFields.append(optionText)
-                killButton = Button(master=self, text="X")
-                killButton.configure(command=partial(self.killDialog, killButton, optionText, optionLabel))
-                killButton.grid(row=self.currentRow, column=2)
+                    self.widgets["option" + option["OptionSlot"]].setLabel("Closing Dialog")
+                    self.widgets["option" + option["OptionSlot"]].isClosing = True
+                    
+                """
+                self.optionLabels[currentElement].grid(row=self.currentRow, column=0)
+                self.optionTextFields[currentElement] = Text(master=self, height=self.textHeight, width=self.textWidth)
+                self.optionTextFields[currentElement].grid(row=self.currentRow, column=1)
+                self.optionTextFields[currentElement].insert("end-1c", option["Option"]["Title"])
+                self.optionTextFields[currentElement].bind("<Tab>", lambda event:self.shiftFocus(event))
+                self.killButtonList[currentElement] = Button(master=self, text="X")
+                self.killButtonList[currentElement].configure(command=partial(self.killDialog, self.killButtonList[currentElement], self.optionTextFields[currentElement], self.optionLabels[currentElement]))
+                self.killButtonList[currentElement].grid(row=self.currentRow, column=2)
+                """
+                
+                self.widgets["option" + option["OptionSlot"]].grid(row=self.currentRow, column=0)
+                self.elements += 1                
                 self.currentRow += 1
-            if self.dialogAmount < 6:
-                self.addClosingDialogButton = Button(master=self, text="Add Closing Dialog", command=self.addClosingDialog)
-                self.addClosingDialogButton.grid(row=0, column=3)
+            self.addClosingDialogButton = Button(master=self, text="Add Closing Dialog", command=self.addClosingDialog)
+            self.addClosingDialogButton.grid(row=0, column=1)
+            if self.dialogAmount > 5:
+                self.addClosingDialogButton.configure(state="disabled")
 
             self.saveButton = Button(master=self, text="Save", command=self.save)
-            self.saveButton.grid(row=0, column=4)
+            self.saveButton.grid(row=0, column=2)
             remove("temp.json")
 
         else:
@@ -83,8 +102,8 @@ class EditWindow(Toplevel):
             clean(self.filename, self.parent)
             tmp = open("temp.json", encoding="utf-8")
             data = json.load(tmp)
-            data["DialogTitle"] = self.titleInput.get("1.0", "end").strip()
-            data["DialogText"] = self.textInput.get("1.0", "end").strip()
+            data["DialogTitle"] = self.widgets["DialogTitle"].getText()
+            data["DialogText"] = self.widgets["DialogText"].getText()
             data["Options"] = []
             currentOption = 0
             defaultOption = {
@@ -96,12 +115,13 @@ class EditWindow(Toplevel):
                 "DialogColor": "14737632",
                 "OptionType": "1"
             }}
-            for option in self.optionTextFields:
-                defaultOption["Option"]["Title"] = option.get("1.0", "end").strip()
-                data["Options"].append(defaultOption)
-            for label in self.optionLabels:
-                data["Options"][currentOption]["Option"]["Dialog"] = label.winfo_name()
-                currentOption += 1
+            for widget in self.widgets.values():          
+                if widget.slot != None:
+                    defaultOption["Option"]["Title"] = widget.getText()
+                    defaultOption["Option"]["Title"] = widget.destination
+                    defaultOption["OptionSlot"] = widget.slot
+                    data["Options"].append(defaultOption)
+
             file = open("dialogs/" + self.parent.choice.get() + "/" + self.filename, "w+", encoding="utf-8")
             json.dump(data, file, indent=4, ensure_ascii=False)
             file.truncate()
@@ -115,19 +135,19 @@ class EditWindow(Toplevel):
         print(self.selection.get())
     
     def addClosingDialog(self):
-        optionLabel = Label(master=self, text="Closing Dialog")
-        optionLabel.grid(row=self.currentRow, column=0)
-        self.optionLabels.append(optionLabel)
-        closingDialog = Text(master=self, height=self.textHeight, width=self.textWidth)
-        closingDialog.grid(row=self.currentRow, column=1)
-        closingDialog.bind("<Tab>", lambda event:self.shiftFocus(event))
-        killButton = Button(master=self, text="X")
-        killButton.configure(command=partial(self.killDialog, killButton, closingDialog, optionLabel))
-        killButton.grid(row=self.currentRow, column=2)
+        possibleSlots = [f"{x}" for x in range(6)]
+        for widget in self.widgets.values():         
+            if widget.slot != None:
+                possibleSlots.remove(widget.slot)
+
+
+        self.widgets["option" + str(self.elements)] = CompoundField(self, "Closing Dialog", "Goodbye", "option" + str(self.elements), "-1", possibleSlots[0])
+        self.widgets["option" + str(self.elements)].grid(row=self.currentRow, column=0)
+        
         self.currentRow += 1
-        self.optionTextFields.append(closingDialog)
         self.dialogAmount += 1
-        if self.dialogAmount == 6: self.addClosingDialogButton.destroy()
+        self.elements += 1
+        if self.dialogAmount == 6: self.addClosingDialogButton.configure(state="disabled")
 
     def killDialog(self, killButton, textBox, label):
         self.optionTextFields.remove(textBox)
@@ -135,3 +155,10 @@ class EditWindow(Toplevel):
         killButton.destroy()
         textBox.destroy()
         label.destroy()
+
+    def killWidget(self, widget):
+        self.currentRow -= 1
+        if widget.slot != None:
+            self.dialogAmount -= 1
+        if self.dialogAmount < 6: self.addClosingDialogButton.configure(state="active")
+        self.widgets.pop(widget.key)
