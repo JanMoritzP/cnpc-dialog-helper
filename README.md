@@ -17,9 +17,10 @@ You need to put either the .exe file or the program into the root folder of the 
 
 - You are able to visualise the dialogs by moving them around any way you want and hit save. They will load up like that again, the next time you run the program
 - You can edit the dialog title and text of each dialog
+- You can edit the dialog connections
+- You can make new dialogs and new dialog folders
+- You can remove dialog folders
 
 ## Future Features
 
-- You will be able to make new dialogs and edit the connections between the dialogs
-- You will be able to edit all json entries on the dialogs
-- There will be a preset functionality so that the json entries you want to edit will be already selected for you to edit
+- You will be able to remove single dialogs
