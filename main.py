@@ -6,7 +6,7 @@ import math
 from shutil import copyfile
 from turtle import width
 from cleanJson import clean
-from createBubble import getArrow
+from createBubble import getArrow, getOuterRectPos
 from editWindow import EditWindow
 
 
@@ -86,6 +86,8 @@ class GUI(Tk):
         
         self.linking = False
         self.linkSrc = None
+        self.linkSrcCoord = None
+        self.linkingArrow = None
 
     def toggleMove(self, event=None):
         self.mode = "move"
@@ -161,13 +163,66 @@ class GUI(Tk):
 
     def release(self, event):
         #get the tag from the textBox xxx.json and save that to the positons object
-        if self.clickedRect != []:
-            self.positions[self.canvas.gettags(self.clickedRect[1])[0]] = self.canvas.coords(self.clickedRect[1])
-        self.clicked = False
-        self.clickedRect = []
+        if self.mode == "move":
+            if self.clickedRect != []:
+                self.positions[self.canvas.gettags(self.clickedRect[1])[0]] = self.canvas.coords(self.clickedRect[1])
+            self.clicked = False
+            self.clickedRect = []
+        elif self.mode == "link":
+            if self.linking:
+                self.canvas.delete(self.linkingArrow)
+                self.linkingArrow = None
+                self.linking = False
+                source = self.linkSrc
+                dst = False
+                for bbox in self.bboxes:
+                    x1, y1, x2, y2 = bbox[0]
+                    if event.x >= x1 and event.x <= x2 and event.y >= y1 and event.y <= y2:
+                        dst = [bbox[2], bbox[3], event.x, event.y] #rect, textBox, x, y
+                if dst == False:
+                    return
+                if source == self.canvas.gettags(dst[1])[0]: return
+                dstFilename = self.canvas.gettags(dst[1])[0] #This gives us filename
+                clean(dstFilename, self)
+                tmp = open("temp.json", encoding='utf-8')
+                data = json.load(tmp)
+                tmp.close()
+                remove("temp.json")
+                clean(source, self)
+                tmp = open("temp.json", encoding='utf-8')
+                sourceData = json.load(tmp)
+                tmp.close()
+                remove("temp.json")
+                if len(sourceData["Options"]) > 6: return
+                if len(sourceData["Options"]) > 0:
+                    for option in sourceData["Options"]:
+                        if option["Option"]["Dialog"] == dstFilename.split(".")[0]:
+                            return
+                defaultOption = {
+                "OptionSlot": str(len(sourceData["Options"])),
+                "Option": {
+                    "DialogCommand": "",
+                    "Dialog": data["DialogId"],
+                    "Title": data["DialogTitle"],
+                    "DialogColor": "14737632",
+                    "OptionType": "1"
+                }}
+                sourceData["Options"].append(defaultOption)
+                file = open(self.path + self.choice.get() + "/" + source, 'w', encoding='utf-8')
+                json.dump(sourceData, file, indent=4, ensure_ascii=False)
+                file.truncate()
+                file.close()
+                
+                initCoords = self.canvas.coords(self.canvas.find_withtag(source + "rect")[0])
+                targetCoords = self.canvas.coords(self.canvas.find_withtag(self.canvas.gettags(dst[1])[0] + "rect")[0])
+                startMid, targetMid = getArrow(initCoords, targetCoords)
+                line = self.canvas.create_line(startMid[0], startMid[1], targetMid[0], targetMid[1], arrow=LAST, tags=source + "arrow" + self.canvas.gettags(dst[1])[0])
+                self.lines.append([self.canvas.find_withtag(source + "rect")[0], self.canvas.find_withtag(self.canvas.gettags(dst[1])[0] + "rect")[0], line])
+            
+
 
     def moveMouse(self, event):
-        if self.clicked and self.clickedRect != 0:
+        if self.clicked and self.clickedRect != 0 and self.mode == "move":
             rect, textBox, initX, initY = self.clickedRect
             x1, y1, _, _ = self.canvas.coords(rect) # Coords of textbox, move according to init mouse, get top left and move relative
             distX, distY = initX - x1, initY - y1
@@ -191,6 +246,9 @@ class GUI(Tk):
             for bbox in self.bboxes:
                 if bbox[2] == rect and bbox[3] == textBox:
                     bbox[0] = self.canvas.coords(rect)
+        elif self.linking and self.mode == "link":
+            rectCoords = getOuterRectPos(self.linkSrcCoord, [event.x, event.y])
+            self.canvas.coords(self.linkingArrow, [rectCoords[0], rectCoords[1], event.x, event.y])
 
     def endFullscreen(self, event=None):  #To get out of fullscreen
         self.fullscreen=False,
@@ -309,66 +367,20 @@ class GUI(Tk):
             tmp.close()
 
             editWindow = EditWindow(self, None, data, tag)
+            editWindow.focus()
         elif self.mode == "link":
-            if self.linking:
-                self.linking = False
-                source = self.linkSrc
-                dst = False
-                for bbox in self.bboxes:
-                    x1, y1, x2, y2 = bbox[0]
-                    if event.x >= x1 and event.x <= x2 and event.y >= y1 and event.y <= y2:
-                        dst = [bbox[2], bbox[3], event.x, event.y] #rect, textBox, x, y
-                if dst == False:
-                    return
-                filename = self.canvas.gettags(dst[1])[0] #This gives us filename
-                clean(filename, self)
-                tmp = open("temp.json", encoding='utf-8')
-                #try:
-                #except:
-                #    return
-                data = json.load(tmp)
-                tmp.close()
-                remove("temp.json")
-                if len(data["Options"]) > 6: return
-                filename = source
-                clean(source, self)
-                tmp = open("temp.json", encoding='utf-8')
-                sourceData = json.load(tmp)
-                tmp.close()
-                remove("temp.json")
-                if len(data["Options"]) > 0:
-                    for option in data["Options"]:
-                        if option["Option"]["Dialog"] == source.split("."):
-                            return
-                defaultOption = {
-                "OptionSlot": str(len(data["Options"])),
-                "Option": {
-                    "DialogCommand": "",
-                    "Dialog": sourceData["DialogId"],
-                    "Title": sourceData["DialogTitle"],
-                    "DialogColor": "14737632",
-                    "OptionType": "1"
-                }}
-                data["Options"].append(defaultOption)
-                file = open(self.path + self.choice.get() + "/" + self.canvas.gettags(dst[1])[0], 'w', encoding='utf-8')
-                json.dump(data, file, indent=4, ensure_ascii=False)
-                file.truncate()
-                file.close()
-                
-                initCoords = self.canvas.coords(self.canvas.find_withtag(source + "rect")[0])
-                targetCoords = self.canvas.coords(self.canvas.find_withtag(self.canvas.gettags(dst[1])[0] + "rect")[0])
-                startMid, targetMid = getArrow(initCoords, targetCoords)
-                line = self.canvas.create_line(startMid[0], startMid[1], targetMid[0], targetMid[1], arrow=LAST, tags=source + "arrow" + self.canvas.gettags(dst[1])[0])
-                self.lines.append([self.canvas.find_withtag(source + "rect")[0], self.canvas.find_withtag(self.canvas.gettags(dst[1])[0] + "rect")[0], line])
-            else:
-                for bbox in self.bboxes:
-                    x1, y1, x2, y2 = bbox[0]
-                    if event.x >= x1 and event.x <= x2 and event.y >= y1 and event.y <= y2:
-                        src = [bbox[2], bbox[3], event.x, event.y] #rect, textBox, x, y
-                if src == False:
-                    return
-                self.linking = True
-                self.linkSrc = self.canvas.gettags(src[1])[0]
+            src = False
+            for bbox in self.bboxes:
+                x1, y1, x2, y2 = bbox[0]
+                if event.x >= x1 and event.x <= x2 and event.y >= y1 and event.y <= y2:
+                    src = [bbox[2], bbox[3], event.x, event.y] #rect, textBox, x, y
+                    self.linkSrcCoord = bbox[0]
+            if src == False:
+                return
+            rectCoords = getOuterRectPos(self.linkSrcCoord, [event.x, event.y])
+            self.linkingArrow = self.canvas.create_line(rectCoords[0], rectCoords[1], event.x, event.y, arrow=LAST)
+            self.linking = True
+            self.linkSrc = self.canvas.gettags(src[1])[0]
 
     def canvasClicked(self, event):
         if self.mode == "create" and self.loadedChoice != "":

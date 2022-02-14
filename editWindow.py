@@ -28,29 +28,6 @@ class EditWindow(Toplevel):
             self.widgets["DialogText"] = CompoundField(self, "Dialog Text", data["DialogText"], "DialogText")
             self.widgets["DialogText"].grid(column=0, row=1)
             
-            """
-            self.labelTitle = Label(master=self, text="Dialog Title")
-            self.labelTitle.grid(row=0, column=0)
-            self.titleInput = Text(master=self, height=self.textHeight, width=self.textWidth)
-            self.titleInput.grid(row=0, column=1)
-            self.titleInput.focus()
-            self.titleInput.insert("end-1c", data["DialogTitle"])
-            self.titleInput.bind("<Tab>", lambda event:self.shiftFocus(event))
-            self.titleKill = Button(master=self, text="X")
-            self.titleKill.grid(row=0, column=2)
-            self.labelText = Label(master=self, text="Dialog Text")
-            self.labelText.grid(row=1, column=0)
-            self.textInput = Text(master=self, height=self.textHeight, width=self.textWidth)
-            self.textInput.grid(row=1, column=1)
-            self.textInput.insert("end-1c", data["DialogText"])
-            self.textInput.bind("<Tab>", lambda event:self.shiftFocus(event))
-            self.textKill = Button(master=self, text="X")
-            self.textKill.grid(row=1, column=2)
-            self.optionTextFields = [None] * len(data["Options"])
-            self.optionLabels = [None] * len(data["Options"])
-            self.killButtonList = [None] * len(data["Options"])
-            self.removedOptions = []
-            """
             self.dialogAmount = len(data["Options"])
             self.currentRow = 2
             self.elements = 0
@@ -61,17 +38,6 @@ class EditWindow(Toplevel):
                 if option["Option"]["Dialog"] == "-1":
                     self.widgets["option" + option["OptionSlot"]].setLabel("Closing Dialog")
                     self.widgets["option" + option["OptionSlot"]].isClosing = True
-                    
-                """
-                self.optionLabels[currentElement].grid(row=self.currentRow, column=0)
-                self.optionTextFields[currentElement] = Text(master=self, height=self.textHeight, width=self.textWidth)
-                self.optionTextFields[currentElement].grid(row=self.currentRow, column=1)
-                self.optionTextFields[currentElement].insert("end-1c", option["Option"]["Title"])
-                self.optionTextFields[currentElement].bind("<Tab>", lambda event:self.shiftFocus(event))
-                self.killButtonList[currentElement] = Button(master=self, text="X")
-                self.killButtonList[currentElement].configure(command=partial(self.killDialog, self.killButtonList[currentElement], self.optionTextFields[currentElement], self.optionLabels[currentElement]))
-                self.killButtonList[currentElement].grid(row=self.currentRow, column=2)
-                """
                 
                 self.widgets["option" + option["OptionSlot"]].grid(row=self.currentRow, column=0)
                 self.elements += 1                
@@ -105,7 +71,6 @@ class EditWindow(Toplevel):
             data["DialogTitle"] = self.widgets["DialogTitle"].getText()
             data["DialogText"] = self.widgets["DialogText"].getText()
             data["Options"] = []
-            currentOption = 0
             defaultOption = {
             "OptionSlot": str(len(data["Options"])),
             "Option": {
@@ -118,7 +83,7 @@ class EditWindow(Toplevel):
             for widget in self.widgets.values():          
                 if widget.slot != None:
                     defaultOption["Option"]["Title"] = widget.getText()
-                    defaultOption["Option"]["Title"] = widget.destination
+                    defaultOption["Option"]["Dialog"] = widget.destination
                     defaultOption["OptionSlot"] = widget.slot
                     data["Options"].append(defaultOption)
 
