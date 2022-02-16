@@ -71,21 +71,10 @@ class EditWindow(Toplevel):
             data["DialogTitle"] = self.widgets["DialogTitle"].getText()
             data["DialogText"] = self.widgets["DialogText"].getText()
             data["Options"] = []
-            defaultOption = {
-            "OptionSlot": str(len(data["Options"])),
-            "Option": {
-                "DialogCommand": "",
-                "Dialog": "0",
-                "Title": "",
-                "DialogColor": "14737632",
-                "OptionType": "1"
-            }}
+            
             for widget in self.widgets.values():          
                 if widget.slot != None:
-                    defaultOption["Option"]["Title"] = widget.getText()
-                    defaultOption["Option"]["Dialog"] = widget.destination
-                    defaultOption["OptionSlot"] = widget.slot
-                    data["Options"].append(defaultOption)
+                    data["Options"].append(self.getNewOption(widget.slot, widget.destination, widget.getText()))
 
             file = open("dialogs/" + self.parent.choice.get() + "/" + self.filename, "w+", encoding="utf-8")
             json.dump(data, file, indent=4, ensure_ascii=False)
@@ -127,3 +116,15 @@ class EditWindow(Toplevel):
             self.dialogAmount -= 1
         if self.dialogAmount < 6: self.addClosingDialogButton.configure(state="active")
         self.widgets.pop(widget.key)
+
+    def getNewOption(self, slot, id, title):
+        option = {
+            "OptionSlot": slot,
+            "Option": {
+                "DialogCommand": "",
+                "Dialog": id,
+                "Title": title,
+                "DialogColor": "14737632",
+                "OptionType": "1"
+            }}
+        return option
