@@ -8,6 +8,7 @@ from turtle import width
 from cleanJson import clean
 from createBubble import getArrow, getOuterRectPos
 from editWindow import EditWindow
+from controller import Controller
 
 
 class GUI(Tk):
@@ -38,18 +39,12 @@ class GUI(Tk):
         self.loadBtn = Button(self, text='Load', command=self.load)
         self.loadBtn.pack()
         self.loadedChoice = ""
-
         self.saveBtn = Button(self, text='Save', command=self.saveConfig)
         self.saveBtn.pack()
-
-        self.moveBtn = Button(self, text="move", command=self.toggleMove, state='disabled')
-        self.moveBtn.pack()
-        self.editBtn = Button(self, text="edit", command=self.toggleEdit)
-        self.editBtn.pack()
-        self.createBtn = Button(self, text="create", command=self.toggleCreate)
-        self.createBtn.pack()
-        self.linkBtn = Button(self, text="link", command=self.toggleLink)
-        self.linkBtn.pack()
+        
+        self.controller = Controller(self)
+        self.controller.pack()
+        
         self.createNewFolder = Button(self, text="create new folder", command=self.createFolder)
         self.createNewFolder.pack()
         self.createFolderText = Text(self, height=1, width=50)
@@ -58,8 +53,6 @@ class GUI(Tk):
         self.removeFolder.pack()
         self.exitBtn = Button(self, text="exit", command=self.destroy)
         self.exitBtn.pack()
-        
-        self.mode = "move"
 
         self.bind('<Escape>', self.endFullscreen)
         self.bind('<F11>', self.toggleFullscreen)
@@ -88,36 +81,6 @@ class GUI(Tk):
         self.linkSrc = None
         self.linkSrcCoord = None
         self.linkingArrow = None
-
-    def toggleMove(self, event=None):
-        self.mode = "move"
-        self.handleButtonStates("move")
-
-    def toggleEdit(self, event=None):
-        self.mode = "edit"
-        self.handleButtonStates("edit")
-        
-    def toggleCreate(self, event=None):
-        self.mode = "create"
-        self.handleButtonStates("create")
-        
-    def toggleLink(self, event=None):
-        self.mode = "link"
-        self.handleButtonStates("link")
-
-    def handleButtonStates(self, button):
-        self.moveBtn.configure(state='active')
-        self.editBtn.configure(state='active')
-        self.createBtn.configure(state='active')
-        self.linkBtn.configure(state='active')
-        if button == "move":
-            self.moveBtn.configure(state='disabled')
-        elif button == "edit":
-            self.editBtn.configure(state='disabled')
-        elif button == "create": 
-            self.createBtn.configure(state='disabled')
-        elif button == "link":
-            self.linkBtn.configure(state='disabled')
 
     def createFolder(self):
         if self.createFolderText.get("1.0", "end").strip() != "":
@@ -163,12 +126,12 @@ class GUI(Tk):
 
     def release(self, event):
         #get the tag from the textBox xxx.json and save that to the positons object
-        if self.mode == "move":
+        if self.controller.getMode() == "move":
             if self.clickedRect != []:
                 self.positions[self.canvas.gettags(self.clickedRect[1])[0]] = self.canvas.coords(self.clickedRect[1])
             self.clicked = False
             self.clickedRect = []
-        elif self.mode == "link":
+        elif self.controller.getMode() == "link":
             if self.linking:
                 self.canvas.delete(self.linkingArrow)
                 self.linkingArrow = None
@@ -222,7 +185,7 @@ class GUI(Tk):
 
 
     def moveMouse(self, event):
-        if self.clicked and self.clickedRect != 0 and self.mode == "move":
+        if self.clicked and self.clickedRect != 0 and self.controller.getMode() == "move":
             rect, textBox, initX, initY = self.clickedRect
             x1, y1, _, _ = self.canvas.coords(rect) # Coords of textbox, move according to init mouse, get top left and move relative
             distX, distY = initX - x1, initY - y1
@@ -246,7 +209,7 @@ class GUI(Tk):
             for bbox in self.bboxes:
                 if bbox[2] == rect and bbox[3] == textBox:
                     bbox[0] = self.canvas.coords(rect)
-        elif self.linking and self.mode == "link":
+        elif self.linking and self.controller.getMode() == "link":
             rectCoords = getOuterRectPos(self.linkSrcCoord, [event.x, event.y])
             self.canvas.coords(self.linkingArrow, [rectCoords[0], rectCoords[1], event.x, event.y])
 
@@ -342,16 +305,16 @@ class GUI(Tk):
 
     def clickedText(self, event):
         #enumerate over the bboxes and check in whick bbox the click is
-        if not self.clicked and self.mode == "move":
+        if not self.clicked and self.controller.getMode() == "move":
             for bbox in self.bboxes:
                 x1, y1, x2, y2 = bbox[0]
                 if event.x >= x1 and event.x <= x2 and event.y >= y1 and event.y <= y2:
                     self.clicked = True
                     self.clickedRect = [bbox[2], bbox[3], event.x, event.y]
-        elif self.clicked and self.mode == "move": 
+        elif self.clicked and self.controller.getMode() == "move": 
             self.clicked = False
             self.clickedRect = []
-        elif self.mode == "edit":
+        elif self.controller.getMode() == "edit":
             #Open Popup menu
             self.openWindow = {}
             tag = ""
@@ -368,7 +331,7 @@ class GUI(Tk):
 
             editWindow = EditWindow(self, None, data, tag)
             editWindow.focus()
-        elif self.mode == "link":
+        elif self.controller.getMode() == "link":
             src = False
             for bbox in self.bboxes:
                 x1, y1, x2, y2 = bbox[0]
@@ -381,9 +344,12 @@ class GUI(Tk):
             self.linkingArrow = self.canvas.create_line(rectCoords[0], rectCoords[1], event.x, event.y, arrow=LAST)
             self.linking = True
             self.linkSrc = self.canvas.gettags(src[1])[0]
+        elif self.controller.getMode() == "delete":
+            ...
+            #Delete Dialog here
 
     def canvasClicked(self, event):
-        if self.mode == "create" and self.loadedChoice != "":
+        if self.controller.getMode() == "create" and self.loadedChoice != "":
             x, y = event.x, event.y
             tag = str(self.currentId) + ".json"
             textBox=self.canvas.create_text(x, y, anchor=W, text="new dialog", tags=tag)
