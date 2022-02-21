@@ -5,7 +5,7 @@ import json
 import math
 from shutil import copyfile
 from turtle import width
-from cleanJson import clean
+from cleanJson import clean, cleanFullPath
 from createBubble import getArrow, getOuterRectPos
 from editWindow import EditWindow
 from controller import Controller
@@ -328,6 +328,7 @@ class GUI(Tk):
             tmp = open("temp.json", encoding="utf-8")
             data = json.load(tmp)
             tmp.close()
+            remove("temp.json")
 
             editWindow = EditWindow(self, None, data, tag)
             editWindow.focus()
@@ -345,14 +346,59 @@ class GUI(Tk):
             self.linking = True
             self.linkSrc = self.canvas.gettags(src[1])[0]
         elif self.controller.getMode() == "delete":
-            ...
             #Delete Dialog here
+            #What needs to be done:
+            #Delete file
+            #Delete all references to that file, otherwise, things will crash.
+            #That means, enumerate over ALL files in /dialogs to check for the reference
+            #Clean the files first, then delete refs and save
+            
+            tag = ""
+            for bbox in self.bboxes:
+                x1, y1, x2, y2 = bbox[0]
+                if event.x >= x1 and event.x <= x2 and event.y >= y1 and event.y <= y2:
+                    tag = bbox[1]
+            if tag == "": return
+            clean(tag, self)
+
+            tmp = open("temp.json", encoding="utf-8")
+            data = json.load(tmp)
+            tmp.close()
+            remove("temp.json")
+
+            #Data is filled with json from to be deleted file. Filename is "tag"
+            #Now delete tag
+            remove(self.path + self.choice.get() + "/" + tag)
+
+            #Now enumerate over all files in self.path with walk
+            (_, dirnames, _) = walk(self.path).__next__()
+            for dir in dirnames:
+                (_, _, files) = walk(self.path + dir).__next__()
+                for file in files:
+                    cleanFullPath(self.path + dir + "/" + file)
+                    tmp = open("temp.json")
+                    tmpData = json.load(tmp)
+                    #get all options without the reference
+                    options = [x for x in tmpData["Options"] if not x["Option"]["Dialog"] == data["DialogId"]]
+                    #Assign new slots if necessary
+                    count = 0
+                    if len(options) != len(tmpData["Options"]):
+                        print("Ref found")
+                        for option in options:
+                            option["OptionSlot"] = count
+                            count += 1
+
+                    tmp.close()
+                    remove("temp.json")
+            self.saveConfig()
+            self.refresh()
+        
 
     def canvasClicked(self, event):
         if self.controller.getMode() == "create" and self.loadedChoice != "":
             x, y = event.x, event.y
             tag = str(self.currentId) + ".json"
-            textBox=self.canvas.create_text(x, y, anchor=W, text="new dialog", tags=tag)
+            textBox=self.canvas.create_text(x, y, anchor=W, text="New Dialog", tags=tag)
             rect=self.canvas.create_rectangle(self.canvas.bbox(textBox), outline="black", tags=tag + "rect")
             self.canvas.tag_bind(tag, "<ButtonPress-1>", self.clickedText)
             self.amountItems += 1
