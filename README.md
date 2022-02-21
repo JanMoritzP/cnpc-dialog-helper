@@ -1,4 +1,4 @@
-# cnpc-dialog-helper (WIP)
+# cnpc-dialog-helper
 Do you like custom-npc's but also dislike the in-game dialog editor?
 
 Then look no further!
