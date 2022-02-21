@@ -57,9 +57,7 @@ class GUI(Tk):
         self.bind('<Escape>', self.endFullscreen)
         self.bind('<F11>', self.toggleFullscreen)
     
-        #self.canvas = Canvas(self, width=1920, height=900)
-        self.canvas = Canvas(self, width=10000, height=10000)
-        #self.canvas.grid(column=0, row=0, sticky=(W, E, S))
+        self.canvas = Canvas(self, width=1920, height=900, border=10, background="#ffffff")
         self.canvas.place(x=0, y=1080-900)
         self.canvas.pack()
         self.canvas.bind("<B1-Motion>", self.moveMouse)
