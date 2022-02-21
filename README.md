@@ -17,7 +17,8 @@ Run python main.py (or python3 main.py) while tkinter is installed and the progr
 - You can edit the dialog connections
 - You can make new dialogs and new dialog folders
 - You can remove dialog folders
+- You can remove single dialogs (their references to other dialogs will be automatically deleted as well)
 
-## Future Features
+## Using the program
 
-- You will be able to remove single dialogs
+Please check [the wiki](https://github.com/JanMoritzP/cnpc-dialog-helper/wiki/Using-this-program) for the usage
