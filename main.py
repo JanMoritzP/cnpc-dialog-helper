@@ -4,11 +4,10 @@ from tkinter import *
 import json
 import math
 from shutil import copyfile
-from turtle import width
-from cleanJson import clean, cleanFullPath
-from createBubble import getArrow, getOuterRectPos
-from editWindow import EditWindow
-from controller import Controller
+from libs.cleanJson import clean, cleanFullPath
+from libs.controller import Controller
+from libs.arrowHelper import getArrow, getOuterRectPos
+from libs.editWindow import EditWindow
 
 
 class GUI(Tk):
