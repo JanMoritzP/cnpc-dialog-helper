@@ -7,11 +7,8 @@ cnpc-dialog-helper is a GUI written in python aimed at eliminating the shortcomi
 
 ## Running the program
 
-You can either download the .exe (which is not uploaded right now, but will be uploaded in the future)
-
-Or you can pull the entire repo and run the main.py file with python3. Keep in mind that you need tkinter installed in order for this program to run
-
-You need to put either the .exe file or the program into the root folder of the custom npc mod (So that there is a dialogs folder) for the program to work correctly
+To run this program, you need to clone this repository to your local machine. Then, copy the dialogs folder from custom-npc into the root of this project. 
+Run python main.py (or python3 main.py) while tkinter is installed and the program should run nicely
 
 ## Current Features
 
