@@ -18,3 +18,7 @@ Run python main.py (or python3 main.py) while tkinter is installed and the progr
 - You can make new dialogs and new dialog folders
 - You can remove dialog folders
 - You can remove single dialogs (their references to other dialogs will be automatically deleted as well)
+
+## Using the program
+
+Please check the wiki for the usage
