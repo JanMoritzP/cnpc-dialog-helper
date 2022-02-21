@@ -21,4 +21,4 @@ Run python main.py (or python3 main.py) while tkinter is installed and the progr
 
 ## Using the program
 
-Please check the wiki for the usage
+Please check [the wiki](https://github.com/JanMoritzP/cnpc-dialog-helper/wiki/Using-this-program) for the usage
