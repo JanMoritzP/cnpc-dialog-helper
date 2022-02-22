@@ -342,14 +342,7 @@ class GUI(Tk):
             self.linkingArrow = self.canvas.create_line(rectCoords[0], rectCoords[1], event.x, event.y, arrow=LAST)
             self.linking = True
             self.linkSrc = self.canvas.gettags(src[1])[0]
-        elif self.controller.getMode() == "delete":
-            #Delete Dialog here
-            #What needs to be done:
-            #Delete file
-            #Delete all references to that file, otherwise, things will crash.
-            #That means, enumerate over ALL files in /dialogs to check for the reference
-            #Clean the files first, then delete refs and save
-            
+        elif self.controller.getMode() == "delete":            
             tag = ""
             for bbox in self.bboxes:
                 x1, y1, x2, y2 = bbox[0]
@@ -363,11 +356,8 @@ class GUI(Tk):
             tmp.close()
             remove("temp.json")
 
-            #Data is filled with json from to be deleted file. Filename is "tag"
-            #Now delete tag
             remove(self.path + self.choice.get() + "/" + tag)
 
-            #Now enumerate over all files in self.path with walk
             (_, dirnames, _) = walk(self.path).__next__()
             for dir in dirnames:
                 (_, _, files) = walk(self.path + dir).__next__()
@@ -375,15 +365,16 @@ class GUI(Tk):
                     cleanFullPath(self.path + dir + "/" + file)
                     tmp = open("temp.json")
                     tmpData = json.load(tmp)
-                    #get all options without the reference
                     options = [x for x in tmpData["Options"] if not x["Option"]["Dialog"] == data["DialogId"]]
-                    #Assign new slots if necessary
                     count = 0
                     if len(options) != len(tmpData["Options"]):
                         print("Ref found")
                         for option in options:
                             option["OptionSlot"] = count
                             count += 1
+                        with open(self.path + dir + "/" + file, encoding='utf-8') as fs:
+                            json.dump(tmpData, fs, indent=4, ensure_ascii=False)
+                            fs.truncate()
 
                     tmp.close()
                     remove("temp.json")
