@@ -1,6 +1,6 @@
 from tkinter import Label, Toplevel, StringVar, OptionMenu, Button, Text
-from cleanJson import clean
-from compoundField import CompoundField
+from libs.cleanJson import clean
+from libs.compoundField import CompoundField
 from os import remove
 import json
 from functools import partial
