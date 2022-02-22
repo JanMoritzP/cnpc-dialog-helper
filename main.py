@@ -372,7 +372,7 @@ class GUI(Tk):
                         for option in options:
                             option["OptionSlot"] = count
                             count += 1
-                        with open(self.path + dir + "/" + file, encoding='utf-8') as fs:
+                        with open(self.path + dir + "/" + file, 'w', encoding='utf-8') as fs:
                             json.dump(tmpData, fs, indent=4, ensure_ascii=False)
                             fs.truncate()
 
