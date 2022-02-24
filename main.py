@@ -256,12 +256,17 @@ class GUI(Tk):
             xCoord = self.amountItems%5*200 + 100
             yCoord = math.floor(self.amountItems/5)*30 + 20
             tag = file
-            with open("dialogHelper.config", "r", encoding="utf-8") as configFile:
-                data = json.load(configFile)
-                try:
-                    xCoord, yCoord = data[self.choice.get()][tag]
-                except:
-                    pass
+            
+            if path.isfile("dialogHelper.config"):
+                with open("dialogHelper.config", "r", encoding="utf-8") as configFile:
+                    data = json.load(configFile)
+                    try:
+                        xCoord, yCoord = data[self.choice.get()][tag]
+                    except:
+                        pass
+            else:
+                with open("dialogHelper.config", "w+") as configFile:
+                    configFile.write("{\n}")
             textBox=self.canvas.create_text(xCoord, yCoord, anchor=W, text=shownText, tags=tag)
             rect=self.canvas.create_rectangle(self.canvas.bbox(textBox), outline="black", tags=tag + "rect")
             self.canvas.tag_bind(tag, "<ButtonPress-1>", self.clickedText)
