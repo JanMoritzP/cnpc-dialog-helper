@@ -23,15 +23,21 @@ class GUI(Tk):
         self.frame.pack()
 
         self.path = "dialogs/"
-        (_, dirnames, _) = walk(self.path).__next__()
         self.currentId = 0
-        for dir in dirnames:
-            (_, _, files) = walk(self.path + dir).__next__()
-            for file in files:
-                if int(file.split('.')[0]) > self.currentId: self.currentId = int(file.split('.')[0])
+        directories = []
+        if not path.isdir("dialogs"): mkdir("dialogs")
+        for _, dirnames, _ in walk(self.path):
+            for dir in dirnames:
+                directories.append(dir)
+                for _, _, files in walk(self.path + dir):
+                    for file in files:
+                        if int(file.split('.')[0]) > self.currentId: self.currentId = int(file.split('.')[0])
         self.currentId += 1 #This is the id for any new dialog
         self.choice = StringVar()
-        self.dropdownMenu = OptionMenu(self, self.choice, *dirnames)
+        self.dropdownMenu = OptionMenu(self, self.choice, None)
+        if len(directories) != 0:
+            self.dropdownMenu = OptionMenu(self, self.choice, *directories)
+            
         self.dropdownMenu.place(x=20, y=20)
         self.dropdownMenu.pack()
         
@@ -83,21 +89,21 @@ class GUI(Tk):
         if self.createFolderText.get("1.0", "end").strip() != "":
             mkdir(self.path + self.createFolderText.get("1.0", "end").strip())
             self.createFolderText.delete("1.0", "end")        
-            (_, dirnames, _) = walk(self.path).__next__()
             self.choice.set("")
             self.dropdownMenu['menu'].delete(0, "end")
-            for dirname in dirnames:
-                self.dropdownMenu['menu'].add_command(label=dirname, command=lambda value=dirname:self.choice.set(value))
+            for _, dirnames, _ in walk(self.path):
+                for dirname in dirnames:
+                    self.dropdownMenu['menu'].add_command(label=dirname, command=lambda value=dirname:self.choice.set(value))
             
     def removeFolder(self):
         if self.choice.get() != "":
             rmtree(self.path + self.choice.get())    
             self.createFolderText.delete("1.0", "end")        
-            (_, dirnames, _) = walk(self.path).__next__()
             self.choice.set("")
             self.dropdownMenu['menu'].delete(0, "end")
-            for dirname in dirnames:
-                self.dropdownMenu['menu'].add_command(label=dirname, command=lambda value=dirname:self.choice.set(value))
+            for _, dirnames, _ in walk(self.path):
+                for dirname in dirnames:
+                    self.dropdownMenu['menu'].add_command(label=dirname, command=lambda value=dirname:self.choice.set(value))
             self.canvas.delete('all')
 
     def saveConfig(self):
@@ -226,53 +232,58 @@ class GUI(Tk):
         self.amountItems = 0
         self.canvas.delete('all')
         self.loadedChoice = self.choice.get()
-        (_, _, filenames) = walk(self.path + self.choice.get()).__next__()
-        for file in filenames:
-            clean(file, self)
-            tmp = open("temp.json", encoding="utf-8") #Make sure the encoding is utf-8 so that special chars can be displayed       
-            try:
-                data = json.load(tmp)
-            except json.JSONDecodeError:
-                print("JsonDecodeError with " + file)
-                tmp.close()
-                remove('temp.json')
-                continue
-            #coords = (self.amountItems*50, self.amountItems*50 + 50, self.amountItems*40, self.amountItems*40 +30)
-            #Insert an artificial linebreak for the text to make it not collide
-            #To do that, check the size of the string, and find a whitespace closest to the middle of the string and replace with \n
-            shownText = data["DialogTitle"]
-            length = len(shownText)
-            if length > 30:
-                #Modify shownText
-                indeces = [i for i, ltr in enumerate(shownText) if ltr == " "]
-                #now check for closest to 15
-                currentDist = length
-                currentIdx = 0
-                for i in indeces:
-                    if i - length/2 < currentDist:
-                        currentDist = abs(i - length/2)
-                        currentIdx = i
-                shownText = shownText[:currentIdx] + "\n" + shownText[currentIdx + 1:]
-            xCoord = self.amountItems%5*200 + 100
-            yCoord = math.floor(self.amountItems/5)*30 + 20
-            tag = file
-            with open("dialogHelper.config", "r", encoding="utf-8") as configFile:
-                data = json.load(configFile)
+        for _, _, filenames in walk(self.path + self.choice.get()):
+            for file in filenames:
+                clean(file, self)
+                tmp = open("temp.json", encoding="utf-8") #Make sure the encoding is utf-8 so that special chars can be displayed       
                 try:
-                    xCoord, yCoord = data[self.choice.get()][tag]
-                except:
-                    pass
-            textBox=self.canvas.create_text(xCoord, yCoord, anchor=W, text=shownText, tags=tag)
-            rect=self.canvas.create_rectangle(self.canvas.bbox(textBox), outline="black", tags=tag + "rect")
-            self.canvas.tag_bind(tag, "<ButtonPress-1>", self.clickedText)
-            self.amountItems += 1
-            self.bboxes.append([self.canvas.coords(rect), tag, rect, textBox])
-            
-            self.fileIndeces.append(file.split(".")[0])
-            self.positions[tag] = self.canvas.coords(textBox)
+                    data = json.load(tmp)
+                except json.JSONDecodeError:
+                    print("JsonDecodeError with " + file)
+                    tmp.close()
+                    remove('temp.json')
+                    continue
+                #coords = (self.amountItems*50, self.amountItems*50 + 50, self.amountItems*40, self.amountItems*40 +30)
+                #Insert an artificial linebreak for the text to make it not collide
+                #To do that, check the size of the string, and find a whitespace closest to the middle of the string and replace with \n
+                shownText = data["DialogTitle"]
+                length = len(shownText)
+                if length > 30:
+                    #Modify shownText
+                    indeces = [i for i, ltr in enumerate(shownText) if ltr == " "]
+                    #now check for closest to 15
+                    currentDist = length
+                    currentIdx = 0
+                    for i in indeces:
+                        if i - length/2 < currentDist:
+                            currentDist = abs(i - length/2)
+                            currentIdx = i
+                    shownText = shownText[:currentIdx] + "\n" + shownText[currentIdx + 1:]
+                xCoord = self.amountItems%5*200 + 100
+                yCoord = math.floor(self.amountItems/5)*30 + 20
+                tag = file
+                
+                if path.isfile("dialogHelper.config"):
+                    with open("dialogHelper.config", "r", encoding="utf-8") as configFile:
+                        data = json.load(configFile)
+                        try:
+                            xCoord, yCoord = data[self.choice.get()][tag]
+                        except:
+                            pass
+                else:
+                    with open("dialogHelper.config", "w+") as configFile:
+                        configFile.write("{\n}")
+                textBox=self.canvas.create_text(xCoord, yCoord, anchor=W, text=shownText, tags=tag)
+                rect=self.canvas.create_rectangle(self.canvas.bbox(textBox), outline="black", tags=tag + "rect")
+                self.canvas.tag_bind(tag, "<ButtonPress-1>", self.clickedText)
+                self.amountItems += 1
+                self.bboxes.append([self.canvas.coords(rect), tag, rect, textBox])
+                
+                self.fileIndeces.append(file.split(".")[0])
+                self.positions[tag] = self.canvas.coords(textBox)
 
-            tmp.close()
-            remove("temp.json")
+                tmp.close()
+                remove("temp.json")
 
         #Now create lines, this has to be done in a different loop, because the tags have to be done first
         for file in filenames:
@@ -358,26 +369,26 @@ class GUI(Tk):
 
             remove(self.path + self.choice.get() + "/" + tag)
 
-            (_, dirnames, _) = walk(self.path).__next__()
-            for dir in dirnames:
-                (_, _, files) = walk(self.path + dir).__next__()
-                for file in files:
-                    cleanFullPath(self.path + dir + "/" + file)
-                    tmp = open("temp.json")
-                    tmpData = json.load(tmp)
-                    options = [x for x in tmpData["Options"] if not x["Option"]["Dialog"] == data["DialogId"]]
-                    count = 0
-                    if len(options) != len(tmpData["Options"]):
-                        print("Ref found")
-                        for option in options:
-                            option["OptionSlot"] = count
-                            count += 1
-                        with open(self.path + dir + "/" + file, 'w', encoding='utf-8') as fs:
-                            json.dump(tmpData, fs, indent=4, ensure_ascii=False)
-                            fs.truncate()
+            for _, dirnames, _ in walk(self.path):
+                for dir in dirnames:
+                    for _, _, files in walk(self.path + dir):
+                        for file in files:
+                            cleanFullPath(self.path + dir + "/" + file)
+                            tmp = open("temp.json")
+                            tmpData = json.load(tmp)
+                            options = [x for x in tmpData["Options"] if not x["Option"]["Dialog"] == data["DialogId"]]
+                            count = 0
+                            if len(options) != len(tmpData["Options"]):
+                                print("Ref found")
+                                for option in options:
+                                    option["OptionSlot"] = count
+                                    count += 1
+                                with open(self.path + dir + "/" + file, 'w', encoding='utf-8') as fs:
+                                    json.dump(tmpData, fs, indent=4, ensure_ascii=False)
+                                    fs.truncate()
 
-                    tmp.close()
-                    remove("temp.json")
+                            tmp.close()
+                            remove("temp.json")
             self.saveConfig()
             self.refresh()
         

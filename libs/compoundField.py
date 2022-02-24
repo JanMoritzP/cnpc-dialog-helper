@@ -1,4 +1,3 @@
-from distutils import command
 from tkinter import Frame, Label, Text, Button
 
 class CompoundField(Frame):
