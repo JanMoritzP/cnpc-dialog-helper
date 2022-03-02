@@ -28,10 +28,11 @@ class GUI(Tk):
         if not path.isdir("dialogs"): mkdir("dialogs")
         for _, dirnames, _ in walk(self.path):
             for dir in dirnames:
-                directories.append(dir)
-                for _, _, files in walk(self.path + dir):
-                    for file in files:
-                        if int(file.split('.')[0]) > self.currentId: self.currentId = int(file.split('.')[0])
+                if "PaxHeaders" not in dir:
+                    directories.append(dir)
+                    for _, _, files in walk(self.path + dir):
+                        for file in files:
+                            if int(file.split('.')[0]) > self.currentId: self.currentId = int(file.split('.')[0])
         self.currentId += 1 #This is the id for any new dialog
         self.choice = StringVar()
         self.dropdownMenu = OptionMenu(self, self.choice, None)
