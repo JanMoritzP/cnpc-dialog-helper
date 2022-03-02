@@ -13,46 +13,35 @@ class EditWindow(Toplevel):
         self.parent = parent
         self.geometry("800x500")
         self.title("Editing " + data["DialogTitle"])
-        if config == None:
-            #self.selection = StringVar()
-            #self.selectionMenu = OptionMenu(self, self.selection, *data.keys())
-            #self.selectionMenu.grid(row=0, column=3)
-            #self.addField = Button(master=self, text="Add", command=self.addSelection)
-            #self.addField.grid(row=1, column=3)
-            self.bind("<Escape>", self.saveQuit)
-            #self.textWidth = 40
-            #self.textHeight = 2
-            self.widgets = {}
-            self.widgets["DialogTitle"] = CompoundField(self, "Dialog Title", data["DialogTitle"], "DialogTitle")
-            self.widgets["DialogTitle"].grid(column=0, row=0)
-            self.widgets["DialogText"] = CompoundField(self, "Dialog Text", data["DialogText"], "DialogText")
-            self.widgets["DialogText"].grid(column=0, row=1)
+        self.bind("<Escape>", self.saveQuit)
+        self.widgets = {}
+        self.widgets["DialogTitle"] = CompoundField(self, "Dialog Title", data["DialogTitle"], "DialogTitle")
+        self.widgets["DialogTitle"].grid(column=0, row=0)
+        self.widgets["DialogText"] = CompoundField(self, "Dialog Text", data["DialogText"], "DialogText")
+        self.widgets["DialogText"].grid(column=0, row=1)
+        
+        self.dialogAmount = len(data["Options"])
+        self.currentRow = 2
+        self.elements = 0
+        
+        for option in data["Options"]:
+            self.widgets["option" + option["OptionSlot"]] = CompoundField(self, "Option Label for " + option["Option"]["Dialog"], option["Option"]["Title"], "option" + option["OptionSlot"], option["Option"]["Dialog"], self.elements)
+            if option["Option"]["Dialog"] == "-1":
+                self.widgets["option" + option["OptionSlot"]].setLabel("Closing Dialog")
+                self.widgets["option" + option["OptionSlot"]].isClosing = True
             
-            self.dialogAmount = len(data["Options"])
-            self.currentRow = 2
-            self.elements = 0
-            
-            for option in data["Options"]:
-                self.widgets["option" + option["OptionSlot"]] = CompoundField(self, "Option Label for " + option["Option"]["Dialog"], option["Option"]["Title"], "option" + option["OptionSlot"], option["Option"]["Dialog"], self.elements)
-                #self.optionLabels[currentElement] = Label(master=self, text="Option Label for " + option["Option"]["Dialog"], name=option["Option"]["Dialog"])
-                if option["Option"]["Dialog"] == "-1":
-                    self.widgets["option" + option["OptionSlot"]].setLabel("Closing Dialog")
-                    self.widgets["option" + option["OptionSlot"]].isClosing = True
-                
-                self.widgets["option" + option["OptionSlot"]].grid(row=self.currentRow, column=0)
-                self.elements += 1                
-                self.currentRow += 1
-            self.addClosingDialogButton = Button(master=self, text="Add Closing Dialog", command=self.addClosingDialog)
-            self.addClosingDialogButton.grid(row=0, column=1)
-            if self.dialogAmount > 5:
-                self.addClosingDialogButton.configure(state="disabled")
+            self.widgets["option" + option["OptionSlot"]].grid(row=self.currentRow, column=0)
+            self.elements += 1                
+            self.currentRow += 1
+        self.addClosingDialogButton = Button(master=self, text="Add Closing Dialog", command=self.addClosingDialog)
+        self.addClosingDialogButton.grid(row=0, column=1)
+        if self.dialogAmount > 5:
+            self.addClosingDialogButton.configure(state="disabled")
 
-            self.saveButton = Button(master=self, text="Save", command=self.save)
-            self.saveButton.grid(row=0, column=2)
-            remove("temp.json")
+        self.saveButton = Button(master=self, text="Save", command=self.save)
+        self.saveButton.grid(row=0, column=2)
+        remove("temp.json")
 
-        else:
-            print("YOoo, config yeahh")
 
     def shiftFocus(self, event):
         event.widget.tk_focusNext().focus()

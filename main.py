@@ -285,27 +285,27 @@ class GUI(Tk):
                 tmp.close()
                 remove("temp.json")
 
-        #Now create lines, this has to be done in a different loop, because the tags have to be done first
-        for file in filenames:
-            clean(file, self)
-                    
-            tmp = open("temp.json", encoding="utf-8") #Make sure the encoding is utf-8 so that special chars can be displayed       
-            data = json.load(tmp)
-            for option in data["Options"]:
-                if option["Option"]["Dialog"] != "-1": #-1 is always the exit dialog
-                    #Draw arrow here to "option["Dialog"].json"
-                    #Get middle of the target and draw to the target
-                    if option["Option"]["Dialog"] in self.fileIndeces:
-                        initCoords = self.canvas.coords(self.canvas.find_withtag(file + "rect")[0])
-                        targetCoords = self.canvas.coords(self.canvas.find_withtag(option["Option"]["Dialog"] + ".json" + "rect")[0])
-                        startMid, targetMid = getArrow(initCoords, targetCoords)
-                        line = self.canvas.create_line(startMid[0], startMid[1], targetMid[0], targetMid[1], arrow=LAST, tags=file + "arrow" + option["Option"]["Dialog"] + ".json")
-                        self.lines.append([self.canvas.find_withtag(file + "rect")[0], self.canvas.find_withtag(option["Option"]["Dialog"] + ".json" + "rect")[0], line])
-                    else:
-                        print("look through folders and find dialog")
-            
-            tmp.close()
-            remove("temp.json")
+            #Now create lines, this has to be done in a different loop, because the tags have to be done first
+            for file in filenames:
+                clean(file, self)
+                        
+                tmp = open("temp.json", encoding="utf-8") #Make sure the encoding is utf-8 so that special chars can be displayed       
+                data = json.load(tmp)
+                for option in data["Options"]:
+                    if option["Option"]["Dialog"] != "-1": #-1 is always the exit dialog
+                        #Draw arrow here to "option["Dialog"].json"
+                        #Get middle of the target and draw to the target
+                        if option["Option"]["Dialog"] in self.fileIndeces:
+                            initCoords = self.canvas.coords(self.canvas.find_withtag(file + "rect")[0])
+                            targetCoords = self.canvas.coords(self.canvas.find_withtag(option["Option"]["Dialog"] + ".json" + "rect")[0])
+                            startMid, targetMid = getArrow(initCoords, targetCoords)
+                            line = self.canvas.create_line(startMid[0], startMid[1], targetMid[0], targetMid[1], arrow=LAST, tags=file + "arrow" + option["Option"]["Dialog"] + ".json")
+                            self.lines.append([self.canvas.find_withtag(file + "rect")[0], self.canvas.find_withtag(option["Option"]["Dialog"] + ".json" + "rect")[0], line])
+                        else:
+                            print("look through folders and find dialog")
+                
+                tmp.close()
+                remove("temp.json")
 
 
     def refresh(self):
@@ -336,7 +336,6 @@ class GUI(Tk):
             tmp = open("temp.json", encoding="utf-8")
             data = json.load(tmp)
             tmp.close()
-            remove("temp.json")
 
             editWindow = EditWindow(self, None, data, tag)
             editWindow.focus()
